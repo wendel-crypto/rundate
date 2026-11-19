@@ -1,0 +1,7 @@
+# Static case pages with live prototypes; every other /cases route falls back to the site app
+DirectoryIndex /index.html
+RewriteEngine On
+RewriteRule ^al-socio/?$ /al-socio/case.html [L]
+RewriteRule ^rundate-miami/?$ /rundate/case.html [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^ /index.html [L]

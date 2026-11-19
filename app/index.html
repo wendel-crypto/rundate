@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>RunDate · Matches unlock after you run</title>
+<meta name="description" content="Interactive prototype of RunDate, a dating app for runners in Brickell, Miami. Matches unlock three hours after you log a run.">
+<meta name="theme-color" content="#0B0B10">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0B0B10;--bg2:#111118;--card:#17171F;--card2:#20202A;--line:rgba(255,255,255,.08);--ink:#F7F7FA;--mut:rgba(247,247,250,.62);--dim:rgba(247,247,250,.38);--pink:#FF3D6E;--pink2:#FF7A59;--grad:linear-gradient(135deg,#FF3D6E,#FF7A59);--ok:#34D399;--blue:#60A5FA;--gold:#FBBF24;--violet:#A78BFA;--safe-b:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+input,textarea{-webkit-user-select:text;user-select:text}
+html,body{margin:0;height:100%;background:var(--bg)}
+body{color:var(--ink);font:500 15px/1.4 Inter,system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden;overscroll-behavior:none}
+button,input,textarea,select{font:inherit;color:inherit;background:none;border:0;padding:0;outline:none}
+button{cursor:pointer}img{display:block;-webkit-user-drag:none}
+.mono{font-family:'JetBrains Mono',monospace}
+svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+/* mobile first: the app fills the screen; a phone frame appears only on wide screens */
+.phone{position:fixed;inset:0;background:var(--bg);overflow:hidden}
+@media(min-width:560px){body:not(.embed){display:flex;align-items:center;justify-content:center;background:radial-gradient(900px 600px at 70% 0,#3a0f1f 0,#08080b 65%)}body:not(.embed) .phone{position:relative;inset:auto;width:390px;height:844px;border-radius:50px;box-shadow:0 0 0 10px #18181f,0 0 0 11px #2c2c38,0 50px 120px rgba(0,0,0,.7)}}
+.status{position:absolute;top:0;left:0;right:0;height:44px;display:flex;justify-content:space-between;align-items:center;padding:4px 26px 0;font:700 14px Inter;z-index:70;pointer-events:none}
+.status i{font-style:normal;font-size:11px;letter-spacing:1px}
+body.embed .status,body.real .status{display:none}
+.top{position:absolute;top:44px;left:0;right:0;height:52px;display:flex;align-items:center;gap:10px;padding:0 16px;z-index:30}
+body.embed .top,body.real .top{top:max(8px,env(safe-area-inset-top))}
+.logo{font:900 21px/1 Inter;letter-spacing:-.6px;display:flex;align-items:center;gap:6px}.logo b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.logo .dot{width:9px;height:9px;border-radius:50%;background:var(--grad)}
+.geo{white-space:nowrap;display:inline-flex;align-items:center;gap:5px;font:600 11.5px Inter;color:var(--mut);background:var(--card);padding:6px 9px;border-radius:99px;border:1px solid var(--line)}.geo svg{width:13px;height:13px;color:var(--pink)}
+.sp{flex:1}
+.lockpill{white-space:nowrap;flex:none;display:inline-flex;align-items:center;gap:6px;font:700 12px 'JetBrains Mono';padding:7px 10px;border-radius:99px;background:rgba(251,191,36,.12);color:var(--gold);border:1px solid rgba(251,191,36,.3)}.lockpill svg{width:14px;height:14px}
+.lockpill.open{background:rgba(52,211,153,.12);color:var(--ok);border-color:rgba(52,211,153,.3)}
+.lockpill.norun{background:rgba(255,61,110,.12);color:var(--pink);border-color:rgba(255,61,110,.35)}
+main{position:absolute;inset:96px 0 calc(78px + var(--safe-b)) 0;overflow:hidden}
+body.embed main,body.real main{top:calc(max(8px,env(safe-area-inset-top)) + 52px)}
+.screen{position:absolute;inset:0;display:none;overflow-y:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.screen::-webkit-scrollbar{display:none}.screen.on{display:block;animation:fd .22s ease}
+@keyframes fd{from{opacity:0}}
+/* tab bar */
+.tab{position:absolute;left:0;right:0;bottom:0;height:calc(78px + var(--safe-b));padding-bottom:var(--safe-b);display:grid;grid-template-columns:repeat(5,1fr);align-items:center;background:rgba(11,11,16,.94);backdrop-filter:blur(18px);border-top:1px solid var(--line);z-index:40}
+.tab button{display:flex;flex-direction:column;align-items:center;gap:3px;font:600 10.5px Inter;color:var(--dim);position:relative;height:100%;justify-content:center}
+.tab button.on{color:var(--ink)}.tab button.on svg{color:var(--pink)}
+.tab .log{width:54px;height:54px;border-radius:18px;background:var(--grad);display:grid;place-items:center;color:#fff;box-shadow:0 10px 26px rgba(255,61,110,.45)}.tab .log svg{width:26px;height:26px}
+.tab em{position:absolute;top:10px;left:calc(50% + 6px);font:800 10px/1 Inter;font-style:normal;background:var(--pink);color:#fff;border-radius:99px;padding:3px 5px}
+/* discover */
+#s-discover{overflow:hidden}
+.deck{position:absolute;inset:6px 12px 92px}
+.card{position:absolute;inset:0;border-radius:26px;overflow:hidden;background:var(--card2);touch-action:none;will-change:transform;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.card.back{transform:scale(.95) translateY(12px);filter:brightness(.7)}
+.card img.ph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
+.card .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.35) 0,transparent 22%,transparent 45%,rgba(11,11,16,.55) 62%,rgba(11,11,16,.97) 100%);pointer-events:none}
+.bars{position:absolute;top:10px;left:12px;right:12px;display:flex;gap:4px;z-index:3}.bars i{flex:1;height:3px;border-radius:3px;background:rgba(255,255,255,.35)}.bars i.on{background:#fff}
+.zone{position:absolute;top:0;bottom:45%;width:50%;z-index:2}.zone.l{left:0}.zone.r{right:0}
+.badges{position:absolute;top:22px;left:14px;display:flex;gap:6px;z-index:3}
+.bdg{display:inline-flex;align-items:center;gap:4px;font:700 10.5px Inter;padding:5px 8px;border-radius:99px;background:rgba(11,11,16,.6);backdrop-filter:blur(10px)}.bdg svg{width:12px;height:12px}
+.bdg.on i{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block}
+.info{position:absolute;left:16px;right:16px;bottom:14px;z-index:3}
+.info h2{margin:0;font:800 30px/1.05 Inter;letter-spacing:-.6px;display:flex;align-items:center;gap:8px}.info h2 span{font-weight:500;opacity:.85}.info h2 svg{color:var(--blue);width:22px;height:22px}
+.info .meta{color:var(--mut);font-weight:600;font-size:13.5px;margin:4px 0 10px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.lvl{font:800 10px Inter;letter-spacing:.6px;text-transform:uppercase;padding:4px 7px;border-radius:6px;background:rgba(255,61,110,.18);color:#ff8fab}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.strip div{background:rgba(255,255,255,.08);backdrop-filter:blur(10px);border-radius:12px;padding:8px 6px;text-align:center}.strip b{display:block;font:700 14px 'JetBrains Mono'}.strip small{font:700 9px Inter;letter-spacing:.6px;text-transform:uppercase;color:var(--mut)}
+.stamp{position:absolute;top:56px;z-index:4;font:900 34px/1 Inter;letter-spacing:2px;padding:6px 12px;border:4px solid;border-radius:12px;opacity:0;pointer-events:none}
+.stamp.pace{left:20px;color:var(--ok);transform:rotate(-14deg)}.stamp.pass{right:20px;color:var(--pink);transform:rotate(14deg)}
+.acts{position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;align-items:center;gap:18px;z-index:5}
+.ab{width:60px;height:60px;border-radius:50%;background:var(--card);display:grid;place-items:center;border:1px solid var(--line);box-shadow:0 10px 24px rgba(0,0,0,.4);transition:transform .12s}.ab:active{transform:scale(.9)}
+.ab.pass{color:#ff8fab}.ab.inf{width:48px;height:48px;color:var(--mut)}
+.ab.like{width:70px;height:70px;background:var(--grad);color:#fff;border:0;position:relative}.ab.like svg{width:30px;height:30px}
+.ab.like.locked{background:var(--card2);color:var(--gold);border:1px solid rgba(251,191,36,.35)}
+.ab.like small{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font:700 10px 'JetBrains Mono';color:var(--gold);white-space:nowrap}
+.banner{position:absolute;left:14px;right:14px;top:10px;z-index:60;background:#2a1a05;border:1px solid rgba(251,191,36,.45);color:#ffe2a3;border-radius:16px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;font-weight:600;font-size:13.5px;transform:translateY(calc(-100% - 40px));visibility:hidden;transition:transform .3s cubic-bezier(.2,.9,.3,1.2),visibility .3s}.banner.on{transform:none;visibility:visible}.banner svg{color:var(--gold);margin-top:1px}
+.banner b{display:block;color:#fff}
+.empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;color:var(--mut);gap:12px}.empty b{color:var(--ink);font-size:19px}
+.cta{padding:15px 20px;border-radius:16px;background:var(--grad);color:#fff;font-weight:800;font-size:15.5px;box-shadow:0 10px 26px rgba(255,61,110,.3);width:100%}
+.cta[disabled]{opacity:.4;box-shadow:none}
+.ghost{padding:14px 18px;border-radius:16px;background:var(--card);font-weight:700;border:1px solid var(--line);width:100%}
+/* feed */
+.stories{display:flex;gap:12px;overflow-x:auto;padding:4px 16px 14px;scrollbar-width:none}.stories::-webkit-scrollbar{display:none}
+.st{flex:none;width:66px;text-align:center;font:600 11px Inter;color:var(--mut)}.st .ring{width:66px;height:66px;border-radius:50%;padding:3px;background:var(--grad);margin-bottom:5px}.st.seen .ring{background:#2a2a35}.st .ring img{width:100%;height:100%;border-radius:50%;object-fit:cover;border:3px solid var(--bg)}
+.st.add .ring{background:var(--card2);display:grid;place-items:center;color:var(--pink)}
+.post{margin:0 12px 16px;border-radius:24px;overflow:hidden;background:var(--card);border:1px solid var(--line)}
+.post .pm{position:relative;aspect-ratio:4/5}.post .pm img{width:100%;height:100%;object-fit:cover}
+.post .pm:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.45),transparent 25%,transparent 60%,rgba(0,0,0,.85));pointer-events:none}
+.post .ph{position:absolute;top:12px;left:12px;right:12px;display:flex;gap:9px;align-items:center;z-index:2}.post .ph img{width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #fff}.post .ph b{display:block;font-weight:800;font-size:14px}.post .ph small{font-size:11.5px;color:rgba(255,255,255,.8)}
+.type{margin-left:auto;font:800 10px Inter;letter-spacing:.6px;text-transform:uppercase;padding:5px 8px;border-radius:7px}.t-run{background:var(--pink);color:#fff}.t-story{background:var(--violet);color:#1b1035}.t-ms{background:var(--gold);color:#2b1d00}
+.post .sb{position:absolute;left:12px;right:12px;bottom:12px;z-index:2;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.post .sb div{background:rgba(11,11,16,.55);backdrop-filter:blur(10px);border-radius:12px;padding:8px 4px;text-align:center}.post .sb b{display:block;font:700 14px 'JetBrains Mono'}.post .sb small{font:700 9px Inter;letter-spacing:.5px;text-transform:uppercase;color:var(--mut)}
+.post .cap{padding:12px 14px 4px;font-size:14.5px;color:#e4e4ea}.post .cap b{margin-right:5px}
+.post .pa{display:flex;gap:18px;padding:10px 14px 14px;color:var(--mut);font-weight:700;font-size:13.5px}.post .pa button{display:inline-flex;align-items:center;gap:6px}.post .pa button.on{color:var(--pink)}.post .pa button.on svg{fill:var(--pink);stroke:var(--pink)}
+.post .pa .rt{margin-left:auto;font-size:12px;color:var(--dim);font-weight:600}
+/* matches */
+.h1{font:800 26px Inter;letter-spacing:-.5px;margin:2px 16px 12px}
+.lockcard{margin:0 14px 16px;padding:16px;border-radius:22px;background:linear-gradient(135deg,#2a1d07,#1a140a);border:1px solid rgba(251,191,36,.35);display:flex;gap:14px;align-items:center}
+.lockcard .clock{font:700 26px 'JetBrains Mono';color:var(--gold);letter-spacing:-.5px}.lockcard small{display:block;color:#e7cf96;font-size:12.5px;font-weight:600}
+.lockcard .ic{width:46px;height:46px;border-radius:14px;background:rgba(251,191,36,.15);display:grid;place-items:center;color:var(--gold);flex:none}
+.lockcard.norun{background:linear-gradient(135deg,#2c0c18,#18090f);border-color:rgba(255,61,110,.4)}.lockcard.norun .ic{background:rgba(255,61,110,.15);color:var(--pink)}.lockcard.norun small{color:#f5b3c4}
+.lockcard.open{background:linear-gradient(135deg,#072519,#0a1712);border-color:rgba(52,211,153,.35)}.lockcard.open .ic{background:rgba(52,211,153,.15);color:var(--ok)}.lockcard.open .clock{color:var(--ok)}.lockcard.open small{color:#a7f3d0}
+.bubbles{display:flex;gap:14px;overflow-x:auto;padding:0 16px 16px;scrollbar-width:none}.bubbles::-webkit-scrollbar{display:none}
+.bub{flex:none;width:72px;text-align:center;font:700 12px Inter;position:relative}.bub img{width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid var(--pink)}.bub em{position:absolute;top:0;right:0;background:var(--pink);font:800 10px Inter;font-style:normal;border-radius:99px;padding:3px 6px;border:2px solid var(--bg)}
+.dimmed .bub img,.dimmed .row img{filter:grayscale(1) brightness(.55)}.dimmed .bub,.dimmed .row{opacity:.7}
+.lbl{font:800 11px Inter;letter-spacing:1.2px;text-transform:uppercase;color:var(--dim);margin:6px 16px 10px}
+.row{display:flex;gap:12px;align-items:center;padding:10px 16px;width:100%;text-align:left}.row img{width:56px;height:56px;border-radius:50%;object-fit:cover;flex:none}.row .t{flex:1;min-width:0}.row b{display:block;font-weight:800}.row small{display:block;color:var(--mut);font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.row .r{text-align:right;font-size:11.5px;color:var(--dim);font-weight:600}.row .r i{display:inline-block;margin-top:6px;background:var(--pink);color:#fff;font:800 10px Inter;font-style:normal;border-radius:99px;padding:3px 6px}
+/* profile */
+.hero{position:relative;height:360px;overflow:hidden}.hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .3s}
+.hero:after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 40%,var(--bg));pointer-events:none}
+.hero .bars{top:10px}.hero .zone{bottom:0}
+.pinfo{padding:0 16px;margin-top:-86px;position:relative;z-index:3}
+.pinfo h2{margin:0;font:800 28px Inter;letter-spacing:-.5px;display:flex;align-items:center;gap:8px}.pinfo h2 svg{color:var(--blue)}
+.pinfo .meta{color:var(--mut);font-weight:600;font-size:13.5px;margin:4px 0 12px}
+.pstrip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}.pstrip div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 4px;text-align:center}.pstrip b{display:block;font:700 15px 'JetBrains Mono'}.pstrip small{font:700 9.5px Inter;letter-spacing:.6px;text-transform:uppercase;color:var(--mut)}
+.ptabs{display:flex;gap:8px;overflow-x:auto;padding:0 16px 14px;scrollbar-width:none;position:sticky;top:0;background:var(--bg);z-index:4;padding-top:6px}.ptabs::-webkit-scrollbar{display:none}
+.ptabs button{flex:none;padding:9px 15px;border-radius:99px;background:var(--card);font-weight:700;font-size:13.5px;color:var(--mut);border:1px solid var(--line)}.ptabs button.on{background:var(--grad);color:#fff;border-color:transparent}
+.pane{padding:0 16px 24px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:10px}.box h4{margin:0 0 6px;font:800 10.5px Inter;letter-spacing:1px;text-transform:uppercase;color:var(--dim)}.box p{margin:0;color:#e4e4ea;font-size:14.5px}
+.box.ff h4{color:#ff8fab}.box.lf{border-color:rgba(96,165,250,.35);background:rgba(96,165,250,.06)}.box.lf h4{color:var(--blue)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.chips span{font:700 12px Inter;padding:6px 10px;border-radius:99px;background:rgba(96,165,250,.14);color:#bcd7ff}
+.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.qgrid div{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px}.qgrid small{display:block;font:700 10px Inter;letter-spacing:.8px;text-transform:uppercase;color:var(--dim)}.qgrid b{font-size:14.5px}
+.prs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}.prs div{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 6px;text-align:center}.prs b{display:block;font:700 18px 'JetBrains Mono';color:var(--pink)}.prs small{font:700 10px Inter;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}
+.chart{display:flex;align-items:flex-end;gap:8px;height:130px;padding-top:8px}.chart div{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}.chart i{width:100%;border-radius:8px 8px 4px 4px;background:var(--grad);min-height:4px;transition:height .5s}.chart i.rest{background:#2a2a35}.chart small{font:700 10px Inter;color:var(--dim)}.chart em{font:700 10px 'JetBrains Mono';font-style:normal;color:var(--mut)}
+.runrow{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:8px}.runrow .ic{width:42px;height:42px;border-radius:12px;background:rgba(255,61,110,.12);display:grid;place-items:center;color:var(--pink);flex:none}.runrow .t{flex:1}.runrow b{display:block;font-weight:800}.runrow small{color:var(--mut);font-size:12.5px}.runrow .d{font:700 16px 'JetBrains Mono';color:var(--pink)}
+.masonry{columns:3;column-gap:6px}.masonry button{display:block;width:100%;margin-bottom:6px;border-radius:12px;overflow:hidden;break-inside:avoid}.masonry img{width:100%;height:auto}
+.set{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}.set .t{flex:1}.set b{display:block;font-weight:700}.set small{color:var(--mut);font-size:12.5px}
+.tgl{width:46px;height:28px;border-radius:14px;background:#2c2c38;position:relative;flex:none;transition:.2s}.tgl:after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s}.tgl.on{background:var(--pink)}.tgl.on:after{left:21px}
+input[type=range]{width:100%;accent-color:var(--pink)}
+.seg{display:flex;background:var(--card);border-radius:12px;padding:3px;border:1px solid var(--line)}.seg button{flex:1;padding:8px 10px;border-radius:9px;font-weight:700;font-size:12.5px;color:var(--mut)}.seg button.on{background:var(--card2);color:var(--ink)}
+.pcta{position:sticky;bottom:0;padding:12px 16px 16px;background:linear-gradient(transparent,var(--bg) 30%);display:flex;gap:10px;z-index:6}
+.pcta .cta.locked{background:var(--card2);color:var(--gold);box-shadow:none;border:1px solid rgba(251,191,36,.35)}
+/* sheets */
+.sheet{position:absolute;inset:0;z-index:80;display:none;background:var(--bg)}.sheet.on{display:block;animation:up .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.sheet>.in{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none}.sheet>.in::-webkit-scrollbar{display:none}
+.snav{position:absolute;top:44px;left:0;right:0;z-index:20;display:flex;align-items:center;gap:10px;padding:6px 14px}
+body.embed .snav,body.real .snav{top:max(8px,env(safe-area-inset-top))}
+.ib{width:40px;height:40px;border-radius:50%;background:rgba(11,11,16,.6);backdrop-filter:blur(12px);display:grid;place-items:center;border:1px solid var(--line);flex:none}
+.modal{position:absolute;inset:0;z-index:90;display:none;background:rgba(0,0,0,.6);backdrop-filter:blur(4px)}.modal.on{display:block}
+.mpanel{position:absolute;left:0;right:0;bottom:0;background:var(--bg2);border-radius:28px 28px 0 0;padding:10px 18px calc(24px + var(--safe-b));max-height:92%;overflow-y:auto;animation:up .28s cubic-bezier(.2,.8,.2,1);scrollbar-width:none}
+.grab{width:40px;height:5px;border-radius:5px;background:#33333f;margin:2px auto 14px}
+.mh{display:flex;align-items:center;margin-bottom:12px}.mh h3{flex:1;margin:0;font:800 20px Inter}
+.fl{font:800 11px Inter;letter-spacing:1px;text-transform:uppercase;color:var(--dim);margin:14px 2px 8px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}.opt{padding:12px;border-radius:14px;background:var(--card);border:1.5px solid var(--line);text-align:left;font-weight:700}.opt small{display:block;color:var(--mut);font-weight:600;font-size:12px}.opt.on{border-color:var(--pink);background:rgba(255,61,110,.08)}
+.num{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px}.num button{width:40px;height:40px;border-radius:12px;background:var(--card2);font-size:20px;font-weight:700}.num b{flex:1;text-align:center;font:700 22px 'JetBrains Mono'}.num small{font:600 12px Inter;color:var(--mut)}
+.rule{display:flex;gap:10px;padding:12px 14px;border-radius:16px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);color:#f3dca5;font-size:13px;font-weight:600;margin:14px 0}.rule svg{color:var(--gold);flex:none}
+.fld{width:100%;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:13px;font-weight:600;resize:none}.fld:focus{border-color:rgba(255,61,110,.6)}
+.done{text-align:center;padding:30px 6px 4px}.done .ck{width:84px;height:84px;border-radius:50%;background:var(--grad);display:grid;place-items:center;margin:0 auto 16px;animation:pop .5s}.done .ck svg{width:40px;height:40px;stroke-width:3;color:#fff}@keyframes pop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.1)}}
+.done h3{margin:0 0 6px;font:800 23px Inter}.done p{color:var(--mut);margin:0}
+.big{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}.big div{background:var(--card);border-radius:14px;padding:12px 4px;text-align:center}.big b{display:block;font:700 18px 'JetBrains Mono'}.big small{font:700 9.5px Inter;letter-spacing:.6px;text-transform:uppercase;color:var(--mut)}
+/* chat */
+.chat{position:absolute;inset:0;display:flex;flex-direction:column}
+.chead{display:flex;align-items:center;gap:10px;padding:52px 14px 12px;border-bottom:1px solid var(--line);background:var(--bg)}
+body.embed .chead,body.real .chead{padding-top:calc(max(8px,env(safe-area-inset-top)) + 4px)}
+.chead img{width:40px;height:40px;border-radius:50%;object-fit:cover}.chead .t{flex:1}.chead b{display:block;font-weight:800}.chead small{color:var(--ok);font-size:12px;font-weight:700}
+.msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:7px;scrollbar-width:none}
+.m{max-width:78%;padding:10px 13px;border-radius:20px;font-size:14.5px;line-height:1.35}.m.them{background:var(--card2);align-self:flex-start;border-bottom-left-radius:6px}.m.me{background:var(--grad);color:#fff;align-self:flex-end;border-bottom-right-radius:6px}
+.m.sys{align-self:center;background:none;color:var(--dim);font-size:12px;font-weight:600;text-align:center}
+.qr{display:flex;gap:8px;overflow-x:auto;padding:0 14px 8px;scrollbar-width:none}.qr::-webkit-scrollbar{display:none}.qr button{flex:none;padding:8px 12px;border-radius:99px;background:var(--card);font-weight:700;font-size:12.5px;border:1px solid var(--line)}
+.comp{display:flex;gap:8px;padding:8px 14px calc(14px + var(--safe-b))}.comp input{flex:1;background:var(--card);border-radius:22px;padding:12px 16px;font-weight:600}.comp button{width:46px;height:46px;border-radius:50%;background:var(--grad);display:grid;place-items:center;color:#fff}
+/* overlays */
+.match{position:absolute;inset:0;z-index:120;display:none;background:radial-gradient(circle at 50% 35%,rgba(255,61,110,.45),rgba(11,11,16,.97) 65%);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}.match.on{display:flex;animation:fd .3s}
+.match h2{font:900 42px/1 Inter;letter-spacing:-1px;margin:0 0 6px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.match .pair{display:flex;margin:26px 0}.match .pair img{width:120px;height:120px;border-radius:50%;object-fit:cover;border:4px solid #fff}.match .pair img+img{margin-left:-22px}
+.story{position:absolute;inset:0;z-index:130;background:#000;display:none}.story.on{display:block}.story img{width:100%;height:100%;object-fit:cover}
+.story .bars{top:calc(14px + env(safe-area-inset-top))}.story .sh{position:absolute;top:calc(28px + env(safe-area-inset-top));left:14px;right:14px;display:flex;align-items:center;gap:10px;z-index:3}.story .sh img{width:34px;height:34px;border-radius:50%}
+.story .cap{position:absolute;left:16px;right:16px;bottom:40px;font:800 22px Inter;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+.lb{position:absolute;inset:0;z-index:130;background:#000;display:none;flex-direction:column}.lb.on{display:flex}.lb .main{flex:1;position:relative}.lb .main img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}.lb .thumbs{display:flex;gap:6px;overflow-x:auto;padding:10px 12px calc(20px + var(--safe-b))}.lb .thumbs button{flex:none;width:56px;height:56px;border-radius:10px;overflow:hidden;opacity:.5;border:2px solid transparent}.lb .thumbs button.on{opacity:1;border-color:var(--pink)}.lb .thumbs img{width:100%;height:100%;object-fit:cover}
+.toast{position:absolute;left:50%;top:60px;transform:translate(-50%,-20px);background:#fff;color:#0b0b10;padding:10px 16px;border-radius:14px;font-weight:800;font-size:13.5px;z-index:200;opacity:0;transition:.25s;pointer-events:none;max-width:90%;text-align:center}.toast.on{opacity:1;transform:translate(-50%,0)}
+.demo{display:block;margin:10px auto 0;padding:8px 12px;border-radius:12px;border:1.5px dashed #3a3a48;color:var(--mut);font-weight:700;font-size:12px}
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+<div class="status"><span>9:41</span><i>●●●● 5G ▮▮▮</i></div>
+<header class="top" id="top"></header>
+<main>
+<section class="screen on" id="s-discover"></section>
+<section class="screen" id="s-feed"></section>
+<section class="screen" id="s-matches"></section>
+<section class="screen" id="s-profile"></section>
+</main>
+<nav class="tab" id="tab"></nav>
+<div class="banner" id="banner"></div>
+<div class="sheet" id="sh-p"><div class="in" id="pp"></div></div>
+<div class="sheet" id="sh-c"></div>
+<div class="modal" id="mod"><div class="mpanel" id="mp"></div></div>
+<div class="match" id="match"></div>
+<div class="story" id="story"></div>
+<div class="lb" id="lb"></div>
+<div class="toast" id="toast"></div>
+</div>
+<script>
+/* ---------- helpers ---------- */
+const U=(id,w=700,h)=>`https://images.unsplash.com/photo-${id}?w=${w}${h?'&h='+h:''}&q=70&auto=format&fit=crop`;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const P={
+heart:'<path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/>',
+x:'<path d="M18 6 6 18M6 6l12 12"/>',lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',unlock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/>',
+flame:'<path d="M12 22c4 0 7-3 7-7 0-5-4-7-5-12-2 2-3 4-3 6-1-1-2-2-2-4-2 2-4 5-4 9 0 5 3 8 7 8z"/>',
+feed:'<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/>',
+plus:'<path d="M12 5v14M5 12h14"/>',chat:'<path d="M21 12a8 8 0 0 1-11.6 7.2L4 21l1.8-5.4A8 8 0 1 1 21 12z"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.2-6 8-6s7 2 8 6"/>',
+pin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>',check:'<path d="M20 6 9 17l-5-5"/>',
+verified:'<path d="M12 2l2.4 1.8 3-.2.9 2.9 2.5 1.7-1 2.8 1 2.8-2.5 1.7-.9 2.9-3-.2L12 22l-2.4-1.8-3 .2-.9-2.9-2.5-1.7 1-2.8-1-2.8 2.5-1.7.9-2.9 3 .2z" fill="currentColor" stroke="none"/><path d="m8.5 12 2.5 2.5 4.5-5" stroke="#0B0B10" stroke-width="2.4"/>',
+info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/>',back:'<path d="m15 18-6-6 6-6"/>',send:'<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>',
+comment:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',run:'<circle cx="14" cy="4" r="2"/><path d="m8 21 3-6 3 3v4M6 12l3-4 4 1 3 4 3 1M11 15l-2-3"/>',
+clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',cam:'<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
+ff:'<path d="m13 19 9-7-9-7v14zM2 19l9-7-9-7v14z"/>',gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'};
+const ic=(k,c='i')=>`<svg class="${c}" viewBox="0 0 24 24">${P[k]}</svg>`;
+function toast(s){const e=$('#toast');e.textContent=s;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),2200)}
+/* ---------- language ---------- */
+const q=new URLSearchParams(location.search);
+if(q.has('embed'))document.body.classList.add('embed');
+if(!q.has('embed')&&matchMedia('(max-width:559px)').matches)document.body.classList.add('real');
+let L=(q.get('lang')||(()=>{try{return localStorage.getItem('rd-lang')}catch(e){}})()||'en').slice(0,2);if(!['en','es','pt'].includes(L))L='en';
+const T={
+discover:['Discover','Descubrir','Descobrir'],feed:['Feed','Feed','Feed'],log:['Log','Registrar','Registrar'],matches:['Matches','Matches','Matches'],profile:['Profile','Perfil','Perfil'],
+radius:['mi radius','mi de radio','mi de raio'],unlockIn:['Unlock in','Se desbloquea en','Desbloqueia em'],unlocked:['Unlocked','Desbloqueado','Desbloqueado'],logToUnlock:['Log a run','Registra una carrera','Registre uma corrida'],
+pace:['PACE','PACE','PACE'],pass:['PASS','PASS','PASS'],away:['away','de distancia','de distância'],
+weekly:['Weekly','Semanal','Semanal'],pr5k:['5K PR','PR 5K','PR 5K'],half:['Half','Media','Meia'],paceL:['Pace','Ritmo','Ritmo'],
+lockedT:['Matches are locked','Los matches están bloqueados','Os matches estão bloqueados'],
+lockedB:['They unlock 3 hours after your last logged run. Unlock in {t}.','Se desbloquean 3 horas después de tu última carrera registrada. Faltan {t}.','Eles desbloqueiam 3 horas depois da sua última corrida registrada. Faltam {t}.'],
+noRunT:['No run logged today','Hoy no has registrado carreras','Nenhuma corrida registrada hoje'],noRunB:['Log a run to start the 3-hour clock. The run is the price of admission.','Registra una carrera para iniciar el reloj de 3 horas. Correr es el precio de entrada.','Registre uma corrida para iniciar o relógio de 3 horas. Correr é o preço da entrada.'],
+openT:['Matches unlocked','Matches desbloqueados','Matches desbloqueados'],openB:['Everyone in your pool ran today. Go say hi.','Todos en tu zona corrieron hoy. Saluda.','Todo mundo na sua área correu hoje. Diga oi.'],
+outOf:['You have seen everyone in Brickell for now','Ya viste a todos en Brickell por ahora','Você já viu todo mundo em Brickell por enquanto'],outOfB:['New runners join every morning after the Bayfront loop.','Cada mañana se suman corredores después del Bayfront.','Novos corredores entram toda manhã depois do Bayfront.'],restart:['Start over','Empezar de nuevo','Recomeçar'],
+itsMatch:["It's a match","¡Es un match!","Deu match!"],matchSub:['You and {n} both ran today.','Tú y {n} corrieron hoy.','Você e {n} correram hoje.'],sayHi:['Send a message','Enviar mensaje','Enviar mensagem'],keep:['Keep swiping','Seguir','Continuar'],
+newMatches:['New matches','Nuevos matches','Novos matches'],messages:['Messages','Mensajes','Mensagens'],
+about:['About','Sobre mí','Sobre'],stats:['Stats','Stats','Stats'],runs:['Runs','Carreras','Corridas'],gallery:['Gallery','Galería','Galeria'],settings:['Settings','Ajustes','Ajustes'],
+aboutMe:['About me','Sobre mí','Sobre mim'],funFact:['Fun fact','Dato curioso','Curiosidade'],lookingFor:['Looking for','Busco','Procuro'],
+prefTime:['Preferred time','Horario','Horário'],runDays:['Run days','Días','Dias'],nextRace:['Next race','Próxima carrera','Próxima prova'],yrsRunning:['Years running','Años corriendo','Anos correndo'],
+prs:['Personal records','Récords personales','Recordes pessoais'],full:['Full','Maratón','Maratona'],physical:['Physical','Físico','Físico'],height:['Height','Altura','Altura'],restHr:['Resting HR','FC reposo','FC repouso'],vo2:['VO2 max','VO2 máx','VO2 máx'],
+load:['Weekly load · miles','Carga semanal · millas','Carga semanal · milhas'],recent:['Recent runs','Carreras recientes','Corridas recentes'],
+geofence:['Geofence radius','Radio de geocerca','Raio da geocerca'],geofenceS:['Only runners inside this radius see you','Solo te ven corredores dentro de este radio','Só corredores dentro deste raio veem você'],
+hideRoutes:['Hide exact routes','Ocultar rutas exactas','Ocultar rotas exatas'],hideRoutesS:['Show neighbourhood, never start points','Mostrar barrio, nunca el punto de partida','Mostrar bairro, nunca o ponto de partida'],
+showOnline:['Show online status','Mostrar estado en línea','Mostrar status online'],verifiedOnly:['Verified runners only','Solo corredores verificados','Só corredores verificados'],language:['Language','Idioma','Idioma'],
+logTitle:['Log activity','Registrar actividad','Registrar atividade'],type:['Type','Tipo','Tipo'],distance:['Distance','Distancia','Distância'],duration:['Time','Tiempo','Tempo'],route:['Route','Ruta','Rota'],
+easy:['Easy run','Rodaje suave','Rodagem leve'],longRun:['Long run','Fondo','Longão'],intervals:['Intervals','Series','Tiros'],recovery:['Recovery','Recuperación','Recuperação'],
+ruleLog:['Saving this run starts a 3-hour clock. Matches unlock when it hits zero.','Guardar esta carrera inicia un reloj de 3 horas. Los matches se desbloquean al llegar a cero.','Salvar esta corrida inicia um relógio de 3 horas. Os matches desbloqueiam quando zerar.'],
+caption:['Caption (optional)','Texto (opcional)','Legenda (opcional)'],save:['Save run','Guardar carrera','Salvar corrida'],
+saved:['Run logged','Carrera registrada','Corrida registrada'],savedB:['Matches unlock at {h}. Until then, go stretch.','Los matches se desbloquean a las {h}. Mientras, estira.','Os matches desbloqueiam às {h}. Até lá, alongue.'],
+done:['Done','Listo','Pronto'],viewFeed:['See it in the feed','Verla en el feed','Ver no feed'],
+likeBtn:['Pace','Pace','Pace'],unlockBtn:['Unlock in','Faltan','Faltam'],logBtn:['Log a run to like','Registra una carrera','Registre uma corrida'],
+online:['Online now','En línea','Online'],write:['Message…','Mensaje…','Mensagem…'],
+q1:['Bayfront loop tomorrow?','¿Bayfront mañana?','Bayfront amanhã?'],q2:['What are you training for?','¿Para qué entrenas?','Está treinando pra quê?'],q3:['Coffee after the run?','¿Café después de correr?','Café depois da corrida?'],
+skip:['Prototype: skip 3 hours','Prototipo: saltar 3 horas','Protótipo: pular 3 horas'],skipped:['Clock skipped 3 hours','Reloj adelantado 3 horas','Relógio adiantado 3 horas'],
+liked:['Liked','Te gusta','Curtiu'],passed:['Passed','Pasaste','Passou'],cantLike:['Locked: run first','Bloqueado: corre primero','Bloqueado: corra primeiro'],
+comments:['Comments','Comentarios','Comentários'],addComment:['Add a comment…','Agrega un comentario…','Adicione um comentário…'],
+ago:['ago','','atrás'],now:['now','ahora','agora'],tapHint:['Tap the sides to see more photos','Toca los lados para ver más fotos','Toque nas laterais para ver mais fotos'],
+milestone:['Milestone','Logro','Conquista'],story:['Story','Story','Story'],runT:['Run','Carrera','Corrida'],
+mi:['mi','mi','mi'],elev:['Elev','Desn.','Elev.'],time:['Time','Tiempo','Tempo'],noMsgs:['No messages yet','Aún no hay mensajes','Nenhuma mensagem ainda'],
+lockedMsg:['Chats open when matches unlock','Los chats se abren al desbloquear','Os chats abrem ao desbloquear']
+};
+const li=()=>({en:0,es:1,pt:2})[L];
+const t=(k,v)=>{let s=(T[k]||[k])[li()]||T[k][0];if(v)for(const x in v)s=s.replace('{'+x+'}',v[x]);return s};
+/* ---------- data ---------- */
+const NOW=()=>Date.now();
+const ME={id:'me',n:'Wendel',full:'Wendel Freitas',age:42,area:'Brickell',lvl:'Advanced',pace:'8:42',wk:34,pr5:'22:14',half:'1:49',fm:'3:58',
+photos:['1594882645126-14020914d58d','1502224562085-639556652f33','1590333748338-d629e4564ad9','1528543606781-2f6e6857f318'],
+bio:'Marathon runner, Spartan Race competitor. Running toward Lisbon eventually. BQ attempt on deck. Let\'s log miles together.',
+fun:'I ran the São Paulo Marathon and the Miami Marathon in the same calendar year.',look:['Long run partner','Spartan crew','Race weekends'],
+time:'5:45 AM',days:'Tue · Thu · Sat · Sun',race:'Miami Half · Jan',yrs:9,ht:'5\'11"',hr:52,vo2:51,load:[18,24,29,31,26,34,38,34]};
+const PEOPLE=[
+{id:'camila',n:'Camila',age:29,dist:0.4,lvl:'Advanced',pace:'7:58',wk:38,pr5:'20:41',half:'1:38',fm:'3:31',on:true,v:true,likes:true,photos:['1534528741775-53994a69daeb','1571008887538-b36bb32f4571','1541534741688-6078c6bfb5c5','1544367567-0f2fcb009e0b'],
+ bio:'Physical therapist. Bayfront at sunrise, Key Biscayne on Sundays. I will absolutely judge your cadence.',fun:'Paced my dad to his first half marathon at 61.',look:['Morning runs','Long run partner','Post-run coffee'],time:'6:00 AM',days:'Mon · Wed · Sat',race:'Miami Marathon · Jan',yrs:11},
+{id:'marco',n:'Marco',age:34,dist:0.9,lvl:'Advanced',pace:'7:15',wk:42,pr5:'19:02',half:'1:27',fm:'3:09',on:false,v:true,likes:true,photos:['1507003211169-0a1dd7228f2d','1483721310020-03333e577078','1452626038306-9aae5e071dd3','1476480862126-209bfaa8edc8'],
+ bio:'Architect, Rickenbacker repeat enthusiast. Training for Boston, eating like it.',fun:'Ran across the Golden Gate in a tuxedo for a bet.',look:['Tempo runs','Race weekends','Brunch'],time:'6:30 AM',days:'Tue · Thu · Sun',race:'Boston · Apr',yrs:8},
+{id:'danielle',n:'Danielle',age:27,dist:0.6,lvl:'Elite',pace:'6:55',wk:55,pr5:'18:10',half:'1:21',fm:'2:58',on:true,v:true,likes:false,photos:['1544005313-94ddf0286df2','1594381898411-846e7d193883','1599058917212-d750089bc07e','1538805060514-97d9cc17730c'],
+ bio:'Ex-D1 800m. Now chasing a sub-2:55. Will out-kick you, will buy the smoothies.',fun:'Has a playlist that is just the Rocky theme, 14 times.',look:['Track Tuesday','Speed work','Someone who stretches'],time:'5:30 AM',days:'Daily',race:'Chicago · Oct',yrs:14},
+{id:'isabela',n:'Isabela',age:33,dist:1.2,lvl:'Intermediate',pace:'9:05',wk:22,pr5:'25:30',half:'2:01',fm:'—',on:false,v:true,likes:true,photos:['1438761681033-6461ffad8d80','1518611012118-696072aa579a','1565992441121-4367c2967103','1603988363607-e1e4a66962c6'],
+ bio:'Brazilian in Brickell. Product designer. Running my first full in 2027 and I need accountability.',fun:'Learned to run in Ibirapuera Park dodging skateboarders.',look:['First marathon buddy','Sunset runs','Açaí after'],time:'6:30 PM',days:'Mon · Thu · Sat',race:'NYC · Nov',yrs:3},
+{id:'jason',n:'Jason',age:30,dist:1.5,lvl:'Intermediate',pace:'9:00',wk:20,pr5:'24:10',half:'1:58',fm:'—',on:true,v:false,likes:false,photos:['1500648767791-00dcc994a43e','1594737625785-a6cbdabd333c','1486218119243-13883505764c'],
+ bio:'Finance by day, causeway runs by night. Recovering triathlete.',fun:'Owns 11 pairs of the same shoe.',look:['Evening runs','Gym partner','Beach runs'],time:'7:00 PM',days:'Tue · Fri · Sun',race:'Miami Half · Jan',yrs:5},
+{id:'nina',n:'Nina',age:28,dist:0.8,lvl:'Beginner',pace:'10:30',wk:12,pr5:'29:45',half:'—',fm:'—',on:true,v:true,likes:true,photos:['1494790108377-be9c29b29330','1584464491033-06628f3a6b7b','1513593771513-7b58b6c4af38'],
+ bio:'Couch to 10K graduate. I run for the views and the post-run tacos.',fun:'Boxing three times a week, running is my cardio cheat code.',look:['Patient pacer','Weekend 10Ks','Tacos'],time:'7:00 AM',days:'Sat · Sun',race:'Turkey Trot · Nov',yrs:1},
+{id:'andre',n:'André',age:36,dist:2.0,lvl:'Elite',pace:'6:40',wk:62,pr5:'17:20',half:'1:16',fm:'2:44',on:false,v:true,likes:true,photos:['1506794778202-cad84cf45f1d','1508215885820-4585e56135c8','1532444458054-01a7dd3e9fca','1461896836934-ffe607ba8211'],
+ bio:'Coach at a Brickell run club. Strength twice a week, non-negotiable.',fun:'Ran a 100K through the Atacama.',look:['Training partner','Strength + run','Coffee nerds'],time:'5:15 AM',days:'Daily',race:'Comrades · Jun',yrs:17},
+{id:'sofia',n:'Sofía',age:31,dist:1.1,lvl:'Intermediate',pace:'8:50',wk:25,pr5:'23:40',half:'1:55',fm:'4:12',on:false,v:true,likes:false,photos:['1573496359142-b8d87734a5a2','1546483875-ad9014c88eba','1530143311094-34d807799e8f'],
+ bio:'Lawyer, half-marathon collector. Looking for someone who signs up for races on a whim.',fun:'Has run a half in 7 countries.',look:['Race travel','Long runs','Wine after'],time:'6:15 AM',days:'Wed · Sat',race:'Lisbon Half · Mar',yrs:6}];
+const BY=Object.fromEntries([ME,...PEOPLE].map(p=>[p.id,p]));
+const ROUTES=['Bayfront Park Loop','Rickenbacker Causeway','Key Biscayne Out & Back','Brickell Key Loop','Coconut Grove · Bayshore','Miami Beach Boardwalk'];
+const mkRuns=(p)=>[[ROUTES[0],'6.2','52:10',t('now')],[ROUTES[2],'12.5','1:48',''],['Track Tuesday','5.0','38:20',''],[ROUTES[4],'4.2','39:05','']];
+let deck=PEOPLE.map(p=>p.id);let idx=0;let photoI={};
+let lastRun=NOW()-(2*3600+38*60)*1000;/* last run logged 2h38m ago */
+let matched=['camila','marco'];let unread={camila:1};let likedPost={};
+let threads={
+camila:[['sys','Matched after both of you ran the Bayfront loop'],['them','Saw you on the 6:00 loop. You were flying on the bridge 👀'],['me','Ha, that was the last mile. Everything hurt.'],['them','Long run Sunday? Key Biscayne, 12 easy.']],
+marco:[['sys','Matched yesterday'],['them','Rickenbacker repeats Thursday, you in?']]};
+let posts=[
+{id:1,who:'camila',type:'run',img:'1571008887538-b36bb32f4571',d:'8.1',pace:'7:52',time:'1:03:44',el:'42',cap:'Sunrise 8 on the Bayfront. Legs felt brand new.',likes:84,cm:[['marco','Those splits 🔥']],ago:'1h'},
+{id:2,who:'andre',type:'ms',img:'1532444458054-01a7dd3e9fca',d:'26.2',pace:'6:16',time:'2:44:08',el:'98',cap:'Sub-2:45. Seven years, one number. Thank you run club.',likes:312,cm:[['danielle','Legend.']],ago:'3h'},
+{id:3,who:'danielle',type:'run',img:'1461896836934-ffe607ba8211',d:'6.0',pace:'6:31',time:'39:06',el:'5',cap:'12 x 400 at the track. Spit was involved.',likes:121,cm:[],ago:'5h'},
+{id:4,who:'isabela',type:'story',img:'1565992441121-4367c2967103',d:'4.0',pace:'9:12',time:'36:48',el:'18',cap:'First run in the new shoes. Instant crush.',likes:47,cm:[],ago:'8h'},
+{id:5,who:'marco',type:'run',img:'1452626038306-9aae5e071dd3',d:'10.0',pace:'7:20',time:'1:13:20',el:'210',cap:'Rickenbacker x 3. The bridge always wins.',likes:96,cm:[],ago:'1d'}];
+const STORIES=[['camila','1544367567-0f2fcb009e0b','Stretching is a love language'],['danielle','1538805060514-97d9cc17730c','Track day'],['andre','1508215885820-4585e56135c8','Leg day before long run? Yes.'],['isabela','1603988363607-e1e4a66962c6','Yoga + sunset'],['nina','1513593771513-7b58b6c4af38','Race bib acquired'],['marco','1476480862126-209bfaa8edc8','Stairs > elevators']];
+let seen={};
+/* ---------- lock ---------- */
+const LOCK=3*3600*1000;
+function lockState(){if(!lastRun)return'norun';const r=lastRun+LOCK-NOW();return r>0?'counting':'open'}
+function remain(){const r=Math.max(0,lastRun+LOCK-NOW());const h=Math.floor(r/3600000),m=Math.floor(r%3600000/60000),s=Math.floor(r%60000/1000);return{h,m,s,txt:`${h}h ${String(m).padStart(2,'0')}m`,clock:`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}}
+function unlockAt(){const d=new Date(lastRun+LOCK);return d.toLocaleTimeString(L==='en'?'en-US':L,{hour:'numeric',minute:'2-digit'})}
+/* ---------- chrome ---------- */
+let tab='discover';
+function renderTop(){const s=lockState();$('#top').innerHTML=`<div class="logo"><span class="dot"></span><span>Run<b>Date</b></span></div><span class="geo">${ic('pin')}Brickell · ${radius} mi</span><span class="sp"></span><button class="lockpill ${s}" onclick="go('matches')" id="lp">${ic(s==='open'?'unlock':'lock')}<span>${s==='open'?t('unlocked'):s==='norun'?t('logToUnlock'):remain().txt}</span></button>`}
+function renderTab(){const un=Object.values(unread).reduce((a,b)=>a+b,0);$('#tab').innerHTML=[['discover','flame'],['feed','feed'],['log','plus'],['matches','chat'],['profile','user']].map(([k,i])=>k==='log'?`<button onclick="openLog()" aria-label="${t('log')}"><span class="log">${ic('plus')}</span></button>`:`<button class="${tab===k?'on':''}" onclick="go('${k}')">${ic(i)}${t(k)}${k==='matches'&&un?`<em>${un}</em>`:''}</button>`).join('')}
+function go(k){tab=k;closeAll();document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+k));renderTab();({discover:renderDiscover,feed:renderFeed,matches:renderMatches,profile:()=>renderProfile('me')})[k]();document.getElementById('s-'+k).scrollTop=0}
+function closeAll(){['sh-p','sh-c'].forEach(i=>$('#'+i).classList.remove('on'));$('#mod').classList.remove('on');$('#match').classList.remove('on');closeStory();$('#lb').classList.remove('on')}
+/* ---------- discover ---------- */
+function cardHTML(p,back){const pi=photoI[p.id]||0;return `<div class="card ${back?'back':''}" data-id="${p.id}">
+${p.photos.map((ph,i)=>`<img class="ph" src="${U(ph,800)}" style="opacity:${i===pi?1:0}" alt="">`).join('')}<div class="shade"></div>
+<div class="bars">${p.photos.map((_,i)=>`<i class="${i===pi?'on':''}"></i>`).join('')}</div>
+<div class="badges" style="top:22px">${p.on?`<span class="bdg on"><i></i>${t('online')}</span>`:''}</div>
+<button class="zone l" aria-label="previous photo"></button><button class="zone r" aria-label="next photo"></button>
+<span class="stamp pace">${t('pace')}</span><span class="stamp pass">${t('pass')}</span>
+<div class="info"><h2>${p.n} <span>${p.age}</span>${p.v?ic('verified'):''}</h2><div class="meta">${ic('pin').replace('class="i"','class="i" style="width:14px;height:14px"')}${p.dist} mi ${t('away')} · <span class="lvl">${p.lvl}</span></div>
+<div class="strip"><div><b>${p.pace}</b><small>${t('paceL')}</small></div><div><b>${p.wk}</b><small>${t('weekly')}</small></div><div><b>${p.pr5}</b><small>${t('pr5k')}</small></div><div><b>${p.half}</b><small>${t('half')}</small></div></div></div></div>`}
+function likeBtn(){const s=lockState();if(s==='open')return `<button class="ab like" onclick="swipe(1)" aria-label="Pace">${ic('heart')}</button>`;return `<button class="ab like locked" onclick="lockedLike()" aria-label="locked">${ic('lock')}<small id="lkc">${s==='norun'?t('logToUnlock'):remain().txt}</small></button>`}
+function renderDiscover(){const el=$('#s-discover');if(idx>=deck.length){el.innerHTML=`<div class="empty">${ic('run')}<b>${t('outOf')}</b><span>${t('outOfB')}</span><button class="ghost" style="width:auto;padding:12px 20px" onclick="idx=0;renderDiscover()">${t('restart')}</button></div>`;return}
+const cur=BY[deck[idx]],nxt=deck[idx+1]?BY[deck[idx+1]]:null;
+el.innerHTML=`<div class="deck" id="deck">${nxt?cardHTML(nxt,1):''}${cardHTML(cur)}</div><div class="acts"><button class="ab pass" onclick="swipe(-1)" aria-label="Pass">${ic('x')}</button><button class="ab inf" onclick="openProfile('${cur.id}')" aria-label="Profile">${ic('info')}</button>${likeBtn()}</div>`;
+bindCard()}
+function bindCard(){const c=document.querySelector('#deck .card:not(.back)');if(!c)return;const id=c.dataset.id,p=BY[id];
+c.querySelector('.zone.l').onclick=e=>{e.stopPropagation();cyc(p,-1)};c.querySelector('.zone.r').onclick=e=>{e.stopPropagation();cyc(p,1)};
+let sx=0,sy=0,dx=0,dy=0,drag=false,moved=false;const pace=c.querySelector('.stamp.pace'),pass=c.querySelector('.stamp.pass');
+c.addEventListener('pointerdown',e=>{drag=true;moved=false;sx=e.clientX;sy=e.clientY;dx=dy=0;c.style.transition='none';c.setPointerCapture(e.pointerId)});
+c.addEventListener('pointermove',e=>{if(!drag)return;dx=e.clientX-sx;dy=e.clientY-sy;if(Math.abs(dx)>6||Math.abs(dy)>6)moved=true;if(!moved)return;c.style.transform=`translate(${dx}px,${dy*.4}px) rotate(${dx/18}deg)`;pace.style.opacity=Math.max(0,Math.min(1,dx/90));pass.style.opacity=Math.max(0,Math.min(1,-dx/90))});
+const end=()=>{if(!drag)return;drag=false;c.style.transition='transform .35s cubic-bezier(.2,.8,.2,1)';
+if(moved&&Math.abs(dx)>100){if(dx>0&&lockState()!=='open'){c.style.transform='';pace.style.opacity=0;lockedLike();return}fly(c,dx>0?1:-1,dy);return}
+c.style.transform='';pace.style.opacity=0;pass.style.opacity=0;if(!moved){/* tap on bottom = open profile */}};
+c.addEventListener('pointerup',end);c.addEventListener('pointercancel',end);
+c.querySelector('.info').addEventListener('click',()=>{if(!moved)openProfile(id)})}
+function cyc(p,d){const n=p.photos.length;photoI[p.id]=((photoI[p.id]||0)+d+n)%n;const c=document.querySelector(`#deck .card[data-id="${p.id}"]`);if(!c)return;c.querySelectorAll('img.ph').forEach((im,i)=>im.style.opacity=i===photoI[p.id]?1:0);c.querySelectorAll('.bars i').forEach((b,i)=>b.classList.toggle('on',i===photoI[p.id]))}
+function fly(c,dir,dy=0){c.style.transition='transform .4s ease-in';c.style.transform=`translate(${dir*600}px,${dy*.4+40}px) rotate(${dir*30}deg)`;const id=c.dataset.id;setTimeout(()=>{idx++;if(dir>0)onLike(id);renderDiscover()},300)}
+function swipe(dir){const c=document.querySelector('#deck .card:not(.back)');if(!c)return;if(dir>0&&lockState()!=='open'){lockedLike();return}c.querySelector(dir>0?'.stamp.pace':'.stamp.pass').style.opacity=1;fly(c,dir)}
+function lockedLike(){const s=lockState();const b=$('#banner');b.innerHTML=`${ic('lock')}<div><b>${s==='norun'?t('noRunT'):t('lockedT')}</b>${s==='norun'?t('noRunB'):t('lockedB',{t:remain().txt})}<button class="demo" style="margin:8px 0 0" onclick="${s==='norun'?'openLog()':'skip()'}">${s==='norun'?'＋ '+t('logTitle'):'⏩ '+t('skip')}</button></div>`;b.classList.add('on');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('on'),4200);navigator.vibrate&&navigator.vibrate(40)}
+function onLike(id){const p=BY[id];if(p.likes&&!matched.includes(id)){matched.unshift(id);threads[id]=[['sys',t('matchSub',{n:p.n})]];unread[id]=0;renderTab();showMatch(p)}else toast(`${t('liked')} · ${p.n}`)}
+function showMatch(p){$('#match').innerHTML=`<h2>${t('itsMatch')}</h2><p style="color:#f3c9d5;font-weight:600;margin:0">${t('matchSub',{n:p.n})}</p><div class="pair"><img src="${U(ME.photos[0],300,300)}" alt=""><img src="${U(p.photos[0],300,300)}" alt=""></div><button class="cta" style="max-width:300px" onclick="closeAll();openChat('${p.id}')">${t('sayHi')}</button><button class="ghost" style="max-width:300px;margin-top:10px" onclick="$('#match').classList.remove('on')">${t('keep')}</button>`;$('#match').classList.add('on')}
+function skip(){lastRun-=LOCK;$('#banner').classList.remove('on');toast('⏩ '+t('skipped'));refresh()}
+function refresh(){renderTop();if(tab==='discover')renderDiscover();if(tab==='matches')renderMatches();if($('#sh-p').classList.contains('on')&&curProfile)renderProfileInto(curProfile,true)}
+/* ---------- feed ---------- */
+function typeChip(ty){return ty==='run'?`<span class="type t-run">${t('runT')}</span>`:ty==='ms'?`<span class="type t-ms">${t('milestone')}</span>`:`<span class="type t-story">${t('story')}</span>`}
+function postHTML(p){const a=BY[p.who];return `<article class="post" id="post-${p.id}"><div class="pm" ondblclick="likeP(${p.id},1)"><img src="${U(p.img,800)}" alt=""><div class="ph"><img src="${U(a.photos[0],100,100)}" alt="" onclick="${a.id==='me'?"go('profile')":`openProfile('${a.id}')`}"><div><b>${a.id==='me'?ME.full:a.n}</b><small>Brickell · ${p.ago}</small></div>${typeChip(p.type)}</div>
+<div class="sb"><div><b>${p.d}</b><small>${t('mi')}</small></div><div><b>${p.pace}</b><small>${t('paceL')}</small></div><div><b>${p.time}</b><small>${t('time')}</small></div><div><b>${p.el}</b><small>${t('elev')} ft</small></div></div></div>
+<div class="cap"><b>${a.id==='me'?ME.n:a.n}</b>${esc(p.cap)}</div><div class="pa"><button class="${likedPost[p.id]?'on':''}" onclick="likeP(${p.id})">${ic('heart')}<span>${p.likes+(likedPost[p.id]?1:0)}</span></button><button onclick="openComments(${p.id})">${ic('comment')}${p.cm.length}</button><span class="rt">${p.route||''}</span></div></article>`}
+function renderFeed(){$('#s-feed').innerHTML=`<div class="stories"><button class="st add" onclick="openLog()"><div class="ring">${ic('plus')}</div>${t('log')}</button>${STORIES.map((s,i)=>`<button class="st ${seen[i]?'seen':''}" onclick="openStory(${i})"><div class="ring"><img src="${U(BY[s[0]].photos[0],140,140)}" alt=""></div>${BY[s[0]].n}</button>`).join('')}</div>${posts.map(postHTML).join('')}<div style="height:6px"></div>`}
+function likeP(id,dbl){if(dbl&&likedPost[id])return;likedPost[id]=!likedPost[id];const b=$('#post-'+id+' .pa button');if(!b)return;b.classList.toggle('on',!!likedPost[id]);b.querySelector('span').textContent=posts.find(p=>p.id===id).likes+(likedPost[id]?1:0)}
+function openComments(id){const p=posts.find(x=>x.id===id);modal(`<div class="grab"></div><div class="mh"><h3>${t('comments')}</h3><button class="ib" onclick="closeMod()">${ic('x')}</button></div>${p.cm.map(c=>`<div class="row" style="padding:8px 0"><img src="${U(BY[c[0]].photos[0],100,100)}" alt="" style="width:36px;height:36px"><div class="t"><b style="font-size:13.5px">${BY[c[0]].n}</b><small style="white-space:normal;color:#e4e4ea">${esc(c[1])}</small></div></div>`).join('')||`<p style="color:var(--mut)">—</p>`}<form style="display:flex;gap:8px;margin-top:10px" onsubmit="event.preventDefault();const v=this.c.value.trim();if(v){posts.find(x=>x.id===${id}).cm.push(['me',v]);openComments(${id});renderFeed()}"><input name="c" class="fld" placeholder="${t('addComment')}"><button class="cta" style="width:auto;padding:0 16px">${ic('send')}</button></form>`)}
+let stI=0,stT=null;
+function openStory(i){stI=i;seen[i]=1;const s=STORIES[i],p=BY[s[0]];const el=$('#story');el.innerHTML=`<img src="${U(s[1],900)}" alt=""><div class="bars"><i class="on" id="stbar" style="background:rgba(255,255,255,.35);position:relative;overflow:hidden"><span style="position:absolute;inset:0;width:0;background:#fff;transition:width 4s linear" id="stfill"></span></i></div><div class="sh"><img src="${U(p.photos[0],80,80)}" alt=""><b>${p.n}</b><span style="color:rgba(255,255,255,.7);font-size:12px">2h</span><span class="sp"></span><button class="ib" onclick="closeStory()">${ic('x')}</button></div><button style="position:absolute;inset:80px 50% 0 0" onclick="stepStory(-1)" aria-label="prev"></button><button style="position:absolute;inset:80px 0 0 50%" onclick="stepStory(1)" aria-label="next"></button><div class="cap">${esc(s[2])}</div>`;el.classList.add('on');requestAnimationFrame(()=>requestAnimationFrame(()=>{const f=$('#stfill');if(f)f.style.width='100%'}));clearTimeout(stT);stT=setTimeout(()=>stepStory(1),4000)}
+function stepStory(d){const n=stI+d;if(n<0||n>=STORIES.length){closeStory();if(tab==='feed')renderFeed();return}openStory(n)}
+function closeStory(){clearTimeout(stT);$('#story').classList.remove('on')}
+/* ---------- matches ---------- */
+function lockCard(){const s=lockState();if(s==='open')return `<div class="lockcard open"><span class="ic">${ic('unlock')}</span><div><div class="clock">${t('openT')}</div><small>${t('openB')}</small></div></div>`;if(s==='norun')return `<div class="lockcard norun"><span class="ic">${ic('run')}</span><div style="flex:1"><div class="clock" style="font-size:18px;color:var(--pink)">${t('noRunT')}</div><small>${t('noRunB')}</small></div></div><div style="padding:0 14px 14px"><button class="cta" onclick="openLog()">＋ ${t('logTitle')}</button></div>`;
+return `<div class="lockcard"><span class="ic">${ic('lock')}</span><div style="flex:1"><div class="clock" id="mclock">${remain().clock}</div><small>${t('lockedB',{t:remain().txt})}</small></div></div><div style="text-align:center;margin:-6px 0 12px"><button class="demo" onclick="skip()">⏩ ${t('skip')}</button></div>`}
+function renderMatches(){const locked=lockState()!=='open';const fresh=matched.filter(id=>!threads[id]||threads[id].filter(m=>m[0]!=='sys').length===0);const conv=matched.filter(id=>!fresh.includes(id));
+$('#s-matches').innerHTML=`<h1 class="h1">${t('matches')}</h1>${lockCard()}<div class="${locked?'dimmed':''}"><div class="lbl">${t('newMatches')}</div><div class="bubbles">${(fresh.length?fresh:matched).map(id=>`<button class="bub" onclick="openChat('${id}')"><img src="${U(BY[id].photos[0],160,160)}" alt="">${unread[id]?`<em>${unread[id]}</em>`:''}<div style="margin-top:5px">${BY[id].n}</div></button>`).join('')}${PEOPLE.filter(p=>!matched.includes(p.id)).slice(0,3).map(p=>`<div class="bub" style="opacity:.5"><img src="${U(p.photos[0],160,160)}" alt="" style="filter:blur(6px);border-color:#333"><div style="margin-top:5px">?</div></div>`).join('')}</div>
+<div class="lbl">${t('messages')}</div>${conv.map(id=>{const th=threads[id].filter(m=>m[0]!=='sys'),last=th[th.length-1];return `<button class="row" onclick="openChat('${id}')"><img src="${U(BY[id].photos[0],120,120)}" alt=""><div class="t"><b>${BY[id].n}</b><small>${last[0]==='me'?(L==='en'?'You: ':L==='es'?'Tú: ':'Você: '):''}${esc(last[1])}</small></div><div class="r">${BY[id].on?'●':''}<br>${unread[id]?`<i>${unread[id]}</i>`:''}</div></button>`}).join('')||`<p style="color:var(--mut);padding:0 16px">${t('noMsgs')}</p>`}</div><div style="height:12px"></div>`}
+function openChat(id){const p=BY[id];unread[id]=0;renderTab();const locked=lockState()!=='open';const el=$('#sh-c');
+el.innerHTML=`<div class="chat"><div class="chead"><button class="ib" onclick="$('#sh-c').classList.remove('on');if(tab==='matches')renderMatches()">${ic('back')}</button><img src="${U(p.photos[0],100,100)}" alt="" onclick="openProfile('${id}')"><div class="t"><b>${p.n} ${p.v?'<span style="color:var(--blue)">✓</span>':''}</b><small>${p.on?'● '+t('online'):p.lvl+' · '+p.pace+'/mi'}</small></div></div>
+<div class="msgs" id="msgs">${threads[id].map(m=>`<div class="m ${m[0]}">${esc(m[1])}</div>`).join('')}${locked?`<div class="m sys">🔒 ${t('lockedMsg')} · ${remain().txt}</div>`:''}</div>
+<div class="qr">${['q1','q2','q3'].map(k=>`<button onclick="send('${id}',t('${k}'))">${t(k)}</button>`).join('')}</div>
+<form class="comp" onsubmit="event.preventDefault();send('${id}')"><input id="mi" placeholder="${t('write')}" autocomplete="off"><button aria-label="send">${ic('send')}</button></form></div>`;el.classList.add('on');setTimeout(()=>{const m=$('#msgs');m.scrollTop=m.scrollHeight},20)}
+const REPLIES=[[/bayfront|loop|tomorrow|mañana|amanhã/i,'6:00 at the Bayfront fountain. Don\'t be late, I don\'t wait 😄'],[/train|entrenas|treinando/i,'{race}. Building to {wk} miles a week right now.'],[/coffee|café|cafe/i,'Only if it\'s Panther Coffee. Non-negotiable.'],[/./,'Ha! Log a run and tell me your splits 👟']];
+function send(id,pre){const i=$('#mi'),v=(pre||i.value).trim();if(!v)return;i.value='';threads[id].push(['me',v]);const m=$('#msgs');m.insertAdjacentHTML('beforeend',`<div class="m me">${esc(v)}</div><div class="m sys" id="typ">${BY[id].n} …</div>`);m.scrollTop=m.scrollHeight;
+const r=REPLIES.find(x=>x[0].test(v))[1].replace('{race}',BY[id].race).replace('{wk}',BY[id].wk);setTimeout(()=>{$('#typ')?.remove();threads[id].push(['them',r]);const mm=$('#msgs');if(mm){mm.insertAdjacentHTML('beforeend',`<div class="m them">${esc(r)}</div>`);mm.scrollTop=mm.scrollHeight}},1300)}
+/* ---------- profile ---------- */
+let curProfile=null,ptab={},radius=2.1,prefs={routes:true,online:true,verified:false};
+function openProfile(id){curProfile=id;$('#sh-p').classList.add('on');renderProfileInto(id)}
+function renderProfile(){$('#s-profile').innerHTML=profileHTML('me')+'';bindHero($('#s-profile'),'me')}
+function renderProfileInto(id,keep){const el=$('#pp');const st=el.scrollTop;el.innerHTML=`<div class="snav"><button class="ib" onclick="$('#sh-p').classList.remove('on');curProfile=null">${ic('back')}</button></div>`+profileHTML(id)+profileCTA(id);bindHero(el,id);if(keep)el.scrollTop=st;else el.scrollTop=0}
+function profileCTA(id){if(matched.includes(id))return `<div class="pcta"><button class="cta" onclick="openChat('${id}')">${ic('chat').replace('class="i"','class="i" style="vertical-align:-5px;margin-right:6px"')}${t('sayHi')}</button></div>`;const s=lockState();
+return `<div class="pcta"><button class="ghost" style="width:64px;flex:none;color:#ff8fab" onclick="passFromProfile('${id}')">${ic('x')}</button><button class="cta ${s!=='open'?'locked':''}" onclick="likeFromProfile('${id}')">${s==='open'?'♥ '+t('likeBtn')+' '+BY[id].n:s==='norun'?'🔒 '+t('logBtn'):'🔒 '+t('unlockBtn')+' '+remain().txt}</button></div>`}
+function likeFromProfile(id){if(lockState()!=='open'){lockedLike();return}$('#sh-p').classList.remove('on');if(deck[idx]===id){swipe(1)}else{onLike(id)}}
+function passFromProfile(id){$('#sh-p').classList.remove('on');if(deck[idx]===id)swipe(-1)}
+function profileHTML(id){const p=BY[id],me=id==='me';const tb=ptab[id]||'about';const tabs=['about','stats','runs','gallery'].concat(me?['settings']:[]);
+return `<div class="hero" data-hero><div class="bars">${p.photos.map((_,i)=>`<i class="${i===0?'on':''}"></i>`).join('')}</div>${p.photos.map((ph,i)=>`<img src="${U(ph,900)}" alt="" style="opacity:${i?0:1}">`).join('')}<button class="zone l" aria-label="prev"></button><button class="zone r" aria-label="next"></button></div>
+<div class="pinfo"><h2>${me?p.full:p.n}${p.v!==false?ic('verified'):''}</h2><div class="meta">📍 ${me?'Brickell, Miami':p.dist+' mi '+t('away')} · ${p.lvl} · ${p.age}${!me&&p.on?' · <span style="color:var(--ok)">● '+t('online')+'</span>':''}</div>
+<div class="pstrip"><div><b>${p.pace}</b><small>${t('paceL')}</small></div><div><b>${p.wk}mi</b><small>${t('weekly')}</small></div><div><b>${p.pr5}</b><small>${t('pr5k')}</small></div><div><b>${p.half}</b><small>${t('half')}</small></div></div></div>
+<div class="ptabs">${tabs.map(k=>`<button class="${tb===k?'on':''}" onclick="ptab['${id}']='${k}';${me?'renderProfile()':`renderProfileInto('${id}',true)`}">${t(k)}</button>`).join('')}</div><div class="pane">${pane(id,tb)}</div>`}
+function pane(id,tb){const p=BY[id];
+if(tb==='about')return `<div class="box"><h4>${t('aboutMe')}</h4><p>${esc(p.bio)}</p></div><div class="box ff"><h4>${t('funFact')}</h4><p>${esc(p.fun)}</p></div><div class="box lf"><h4>${t('lookingFor')}</h4><div class="chips">${p.look.map(x=>`<span>${x}</span>`).join('')}</div></div><div class="qgrid"><div><small>${t('prefTime')}</small><b>${p.time}</b></div><div><small>${t('runDays')}</small><b>${p.days}</b></div><div><small>${t('nextRace')}</small><b>${p.race}</b></div><div><small>${t('yrsRunning')}</small><b>${p.yrs}</b></div></div>`;
+if(tb==='stats'){const load=p.load||[p.wk-8,p.wk-4,p.wk-10,p.wk-2,p.wk+2,p.wk-6,p.wk+4,p.wk].map(x=>Math.max(4,x));const mx=Math.max(...load);
+return `<div class="fl" style="margin-top:0">${t('prs')}</div><div class="prs"><div><b>${p.pr5}</b><small>5K</small></div><div><b>${p.half}</b><small>${t('half')}</small></div><div><b>${p.fm}</b><small>${t('full')}</small></div></div>
+<div class="box"><h4>${t('load')}</h4><div class="chart">${load.map((v,i)=>`<div><em>${v}</em><i style="height:${v/mx*100}%"></i><small>W${i+1}</small></div>`).join('')}</div></div>
+<div class="box"><h4>${t('physical')}</h4><div class="qgrid" style="margin-top:8px"><div><small>${t('height')}</small><b>${p.ht||'5\'7"'}</b></div><div><small>${t('restHr')}</small><b>${p.hr||48+p.yrs%9} bpm</b></div><div><small>${t('vo2')}</small><b>${p.vo2||Math.round(62-parseInt(p.pace))}</b></div><div><small>${t('weekly')}</small><b>${p.wk} mi</b></div></div></div>`}
+if(tb==='runs'){const rs=id==='me'?myRuns:mkRuns(p);return `<div class="fl" style="margin-top:0">${t('recent')}</div>`+rs.map((r,i)=>`<div class="runrow"><span class="ic">${ic('run')}</span><div class="t"><b>${r[0]}</b><small>${['Today','Sun','Tue','Mon','Sat'][i]||''} · ${r[2]}</small></div><span class="d">${r[1]} mi</span></div>`).join('')}
+if(tb==='gallery'){const g=id==='me'?ME.photos.concat(['1502904550040-7534597429ae','1539185441755-769473a23570']):p.photos.concat(posts.filter(x=>x.who===id).map(x=>x.img));return `<div class="masonry">${g.map((ph,i)=>`<button onclick="openLB('${id}',${i})"><img src="${U(ph,300)}" alt="" style="aspect-ratio:${[3/4,1,4/5,3/5,1,5/6][i%6]};object-fit:cover"></button>`).join('')}</div>`}
+if(tb==='settings')return `<div class="box"><h4>${t('geofence')}</h4><div style="display:flex;align-items:center;gap:12px"><input type="range" min="0.5" max="5" step="0.1" value="${radius}" oninput="radius=(+this.value).toFixed(1);this.nextElementSibling.textContent=radius+' mi';renderTop()"><b class="mono" style="white-space:nowrap">${radius} mi</b></div><small style="color:var(--mut)">${t('geofenceS')}</small></div>
+${[['routes','hideRoutes','hideRoutesS'],['online','showOnline',''],['verified','verifiedOnly','']].map(([k,a,b])=>`<div class="set"><div class="t"><b>${t(a)}</b>${b?`<small>${t(b)}</small>`:''}</div><button class="tgl ${prefs[k]?'on':''}" onclick="prefs['${k}']=!prefs['${k}'];this.classList.toggle('on')"></button></div>`).join('')}
+<div class="set" style="border:0"><div class="t"><b>${t('language')}</b></div><div class="seg" style="width:170px">${['en','es','pt'].map(l=>`<button class="${L===l?'on':''}" onclick="setLang('${l}')">${l.toUpperCase()}</button>`).join('')}</div></div>`;
+return ''}
+function bindHero(root,id){const h=root.querySelector('[data-hero]');if(!h)return;let i=0;const imgs=h.querySelectorAll('img'),bars=h.querySelectorAll('.bars i');const set=n=>{i=(n+imgs.length)%imgs.length;imgs.forEach((im,k)=>im.style.opacity=k===i?1:0);bars.forEach((b,k)=>b.classList.toggle('on',k===i))};h.querySelector('.zone.l').onclick=()=>set(i-1);h.querySelector('.zone.r').onclick=()=>set(i+1)}
+function openLB(id,i){const p=BY[id];const g=id==='me'?ME.photos.concat(['1502904550040-7534597429ae','1539185441755-769473a23570']):p.photos.concat(posts.filter(x=>x.who===id).map(x=>x.img));const el=$('#lb');const draw=k=>{el.innerHTML=`<div class="snav"><span class="sp"></span><button class="ib" onclick="$('#lb').classList.remove('on')">${ic('x')}</button></div><div class="main"><img src="${U(g[k],1100)}" alt=""><button style="position:absolute;inset:0 50% 0 0" onclick="this.closest('.lb')._d(${(k-1+g.length)%g.length})" aria-label="prev"></button><button style="position:absolute;inset:0 0 0 50%" onclick="this.closest('.lb')._d(${(k+1)%g.length})" aria-label="next"></button></div><div class="thumbs">${g.map((x,j)=>`<button class="${j===k?'on':''}" onclick="this.closest('.lb')._d(${j})"><img src="${U(x,120,120)}" alt=""></button>`).join('')}</div>`};el._d=draw;draw(i);el.classList.add('on')}
+/* ---------- log activity ---------- */
+let myRuns=[['Bayfront Park Loop','6.2','52:10'],['Key Biscayne Long Run','12.5','1:48:30'],['Track Tuesday Intervals','5.0','38:20'],['Recovery · Coconut Grove','4.2','39:05']];
+let LG=null;
+function openLog(){closeAll();LG={type:'easy',d:5.0,min:44,route:0,img:'1594882645126-14020914d58d',cap:''};renderLog()}
+function paceOf(){const p=LG.min/LG.d,m=Math.floor(p),s=Math.round((p-m)*60);return `${m}:${String(s===60?0:s).padStart(2,'0')}`}
+function renderLog(){const imgs=['1594882645126-14020914d58d','1502224562085-639556652f33','1525026198548-4baa812f1183','1528543606781-2f6e6857f318'];
+modal(`<div class="grab"></div><div class="mh"><h3>${t('logTitle')}</h3><button class="ib" onclick="closeMod()">${ic('x')}</button></div>
+<div class="fl" style="margin-top:0">${t('type')}</div><div class="opts">${['easy','longRun','intervals','recovery'].map(k=>`<button class="opt ${LG.type===k?'on':''}" onclick="LG.type='${k}';renderLog()">${t(k)}</button>`).join('')}</div>
+<div class="fl">${t('distance')}</div><div class="num"><button onclick="LG.d=Math.max(1,+(LG.d-0.5).toFixed(1));renderLog()">−</button><b>${LG.d.toFixed(1)} <small>mi</small></b><button onclick="LG.d=+(LG.d+0.5).toFixed(1);renderLog()">＋</button></div>
+<div class="fl">${t('duration')}</div><div class="num"><button onclick="LG.min=Math.max(5,LG.min-2);renderLog()">−</button><b>${Math.floor(LG.min/60)?Math.floor(LG.min/60)+':':''}${String(LG.min%60).padStart(Math.floor(LG.min/60)?2:1,'0')}:00 <small>· ${paceOf()}/mi</small></b><button onclick="LG.min+=2;renderLog()">＋</button></div>
+<div class="fl">${t('route')}</div><select class="fld" onchange="LG.route=+this.value">${ROUTES.map((r,i)=>`<option value="${i}" ${LG.route===i?'selected':''}>${r}</option>`).join('')}</select>
+<div class="fl">📷</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">${imgs.map(x=>`<button style="aspect-ratio:1;border-radius:12px;overflow:hidden;border:2px solid ${LG.img===x?'var(--pink)':'transparent'}" onclick="LG.img='${x}';renderLog()"><img src="${U(x,200,200)}" alt="" style="width:100%;height:100%;object-fit:cover"></button>`).join('')}</div>
+<div class="fl">${t('caption')}</div><input class="fld" value="${esc(LG.cap)}" oninput="LG.cap=this.value" placeholder="Morning miles 🌅">
+<div class="rule">${ic('clock')}<span>${t('ruleLog')}</span></div>
+<button class="cta" onclick="saveRun()">${t('save')}</button>`)}
+function saveRun(){lastRun=NOW();const r=ROUTES[LG.route];myRuns.unshift([r,LG.d.toFixed(1),`${Math.floor(LG.min/60)?Math.floor(LG.min/60)+':':''}${String(LG.min%60).padStart(2,'0')}:00`]);
+posts.unshift({id:Date.now(),who:'me',type:'run',img:LG.img,d:LG.d.toFixed(1),pace:paceOf(),time:myRuns[0][2],el:String(Math.round(LG.d*9)),cap:LG.cap||`${t(LG.type)} · ${r}`,likes:0,cm:[],ago:t('now'),route:r});
+ME.wk=+(ME.wk+LG.d).toFixed(1);
+modal(`<div class="grab"></div><div class="done"><div class="ck">${ic('check')}</div><h3>${t('saved')}</h3><p>${r}</p></div><div class="big"><div><b>${LG.d.toFixed(1)}</b><small>${t('mi')}</small></div><div><b>${paceOf()}</b><small>${t('paceL')}</small></div><div><b>${myRuns[0][2]}</b><small>${t('time')}</small></div></div>
+<div class="rule">${ic('lock')}<span>${t('savedB',{h:unlockAt()})} <b style="color:#fff">${remain().txt}</b></span></div><button class="cta" onclick="closeMod();go('feed')">${t('viewFeed')}</button><button class="ghost" style="margin-top:10px" onclick="closeMod()">${t('done')}</button>`);refresh()}
+/* ---------- modal / lang / loop ---------- */
+function modal(h){$('#mp').innerHTML=h;$('#mod').classList.add('on')}
+function closeMod(){$('#mod').classList.remove('on')}
+$('#mod').addEventListener('click',e=>{if(e.target.id==='mod')closeMod()});
+function setLang(l){L=l;try{localStorage.setItem('rd-lang',l)}catch(e){}document.documentElement.lang=l;renderTop();renderTab();const keep=curProfile;go(tab);if(keep)openProfile(keep)}
+setInterval(()=>{const s=lockState();const lp=$('#lp span');if(lp)lp.textContent=s==='open'?t('unlocked'):s==='norun'?t('logToUnlock'):remain().txt;const mc=$('#mclock');if(mc)mc.textContent=remain().clock;const lk=$('#lkc');if(lk&&s==='counting')lk.textContent=remain().txt;if(s!==refresh._s){refresh._s=s;refresh()}},1000);
+window.addEventListener('message',e=>{const d=e.data||{};if(d.rd==='lang'&&['en','es','pt'].includes(d.v)&&d.v!==L)setLang(d.v);if(d.rd==='go')route(d.v)});
+function route(v){closeAll();if(['discover','feed','matches','profile'].includes(v))go(v);else if(v==='log'){go('discover');openLog()}else if(v==='card'){go('discover');openProfile(deck[idx]||'camila')}else if(v==='lock'){go('discover');setTimeout(()=>swipe(1),400)}else if(v==='unlock'){if(lockState()!=='open')lastRun-=LOCK;go('discover')}else if(v==='chat'){go('matches');openChat('camila')}else if(v==='stats'){ptab.me='stats';go('profile')}else if(v==='gallery'){ptab.me='gallery';go('profile')}else if(v==='story'){go('feed');openStory(0)}}
+document.documentElement.lang=L;refresh._s=lockState();renderTop();renderTab();go('discover');if(q.get('screen'))route(q.get('screen'));
+</script>
+</body>
+</html>
